@@ -1,24 +1,39 @@
-import React from 'react'
-import { ModalProvider } from '@pancakeswap-libs/uikit'
+import { ModalProvider, light, dark } from '@pancakeswap/uikit'
 import { Web3ReactProvider } from '@web3-react/core'
 import { Provider } from 'react-redux'
+import { SWRConfig } from 'swr'
+import { ThemeProvider } from 'styled-components'
 import { getLibrary } from 'utils/web3React'
-import { LanguageContextProvider } from 'contexts/Localisation/languageContext'
-import { ThemeContextProvider } from 'contexts/ThemeContext'
-import { RefreshContextProvider } from 'contexts/RefreshContext'
-import store from 'state'
+import { LanguageProvider } from 'contexts/Localization'
+import { ToastsProvider } from 'contexts/ToastsContext'
+import { fetchStatusMiddleware } from 'hooks/useSWRContract'
+import { Store } from '@reduxjs/toolkit'
+import { ThemeProvider as NextThemeProvider, useTheme as useNextTheme } from 'next-themes'
 
-const Providers: React.FC = ({ children }) => {
+const StyledThemeProvider = (props) => {
+  const { resolvedTheme } = useNextTheme()
+  return <ThemeProvider theme={resolvedTheme === 'dark' ? dark : light} {...props} />
+}
+
+const Providers: React.FC<{ store: Store }> = ({ children, store }) => {
   return (
     <Web3ReactProvider getLibrary={getLibrary}>
       <Provider store={store}>
-        <ThemeContextProvider>
-          <LanguageContextProvider>
-            <RefreshContextProvider>
-              <ModalProvider>{children}</ModalProvider>
-            </RefreshContextProvider>
-          </LanguageContextProvider>
-        </ThemeContextProvider>
+        <ToastsProvider>
+          <NextThemeProvider>
+            <StyledThemeProvider>
+              <LanguageProvider>
+                <SWRConfig
+                  value={{
+                    use: [fetchStatusMiddleware],
+                  }}
+                >
+                  <ModalProvider>{children}</ModalProvider>
+                </SWRConfig>
+              </LanguageProvider>
+            </StyledThemeProvider>
+          </NextThemeProvider>
+        </ToastsProvider>
       </Provider>
     </Web3ReactProvider>
   )

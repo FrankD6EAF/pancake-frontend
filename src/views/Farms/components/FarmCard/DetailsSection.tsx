@@ -1,7 +1,6 @@
-import React from 'react'
-import useI18n from 'hooks/useI18n'
+import { useTranslation } from 'contexts/Localization'
 import styled from 'styled-components'
-import { Text, Flex, LinkExternal } from '@pancakeswap-libs/uikit'
+import { Text, Flex, LinkExternal, Skeleton } from '@pancakeswap/uikit'
 
 export interface ExpandableSectionProps {
   bscScanAddress?: string
@@ -28,21 +27,19 @@ const DetailsSection: React.FC<ExpandableSectionProps> = ({
   lpLabel,
   addLiquidityUrl,
 }) => {
-  const TranslateString = useI18n()
+  const { t } = useTranslation()
 
   return (
     <Wrapper>
       <Flex justifyContent="space-between">
-        <Text>{TranslateString(354, 'Total Liquidity')}:</Text>
-        <Text>{totalValueFormatted}</Text>
+        <Text>{t('Total Liquidity')}:</Text>
+        {totalValueFormatted ? <Text>{totalValueFormatted}</Text> : <Skeleton width={75} height={25} />}
       </Flex>
       {!removed && (
-        <StyledLinkExternal href={addLiquidityUrl}>
-          {TranslateString(999, `Get ${lpLabel}`, { name: lpLabel })}
-        </StyledLinkExternal>
+        <StyledLinkExternal href={addLiquidityUrl}>{t('Get %symbol%', { symbol: lpLabel })}</StyledLinkExternal>
       )}
-      <StyledLinkExternal href={bscScanAddress}>{TranslateString(999, 'View Contract')}</StyledLinkExternal>
-      <StyledLinkExternal href={infoAddress}>{TranslateString(999, 'See Pair Info')}</StyledLinkExternal>
+      <StyledLinkExternal href={bscScanAddress}>{t('View Contract')}</StyledLinkExternal>
+      <StyledLinkExternal href={infoAddress}>{t('See Pair Info')}</StyledLinkExternal>
     </Wrapper>
   )
 }

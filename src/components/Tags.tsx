@@ -1,28 +1,120 @@
-import React from 'react'
-import { Tag, VerifiedIcon, CommunityIcon, BinanceIcon } from '@pancakeswap-libs/uikit'
+import {
+  AutoRenewIcon,
+  BlockIcon,
+  CommunityIcon,
+  RefreshIcon,
+  Tag,
+  TagProps,
+  Text,
+  TimerIcon,
+  TooltipText,
+  useTooltip,
+  VerifiedIcon,
+  VoteIcon,
+} from '@pancakeswap/uikit'
+import { useTranslation } from 'contexts/Localization'
+import { memo } from 'react'
 
-const CoreTag = (props) => (
-  <Tag variant="secondary" outline startIcon={<VerifiedIcon color="secondary" />} {...props}>
-    Core
-  </Tag>
-)
+const CoreTag: React.FC<TagProps> = (props) => {
+  const { t } = useTranslation()
+  return (
+    <Tag variant="secondary" outline startIcon={<VerifiedIcon width="18px" color="secondary" mr="4px" />} {...props}>
+      {t('Core')}
+    </Tag>
+  )
+}
 
-const CommunityTag = (props) => (
-  <Tag variant="textSubtle" outline startIcon={<CommunityIcon color="secondary" />} {...props}>
-    Community
-  </Tag>
-)
+const FarmAuctionTagToolTipContent = memo(() => {
+  const { t } = useTranslation()
+  return <Text color="text">{t('Farm Auction Winner, add liquidity at your own risk.')}</Text>
+})
 
-const BinanceTag = (props) => (
-  <Tag variant="binance" outline startIcon={<BinanceIcon color="secondary" />} {...props}>
-    Binance
-  </Tag>
-)
+const FarmAuctionTag: React.FC<TagProps> = (props) => {
+  const { t } = useTranslation()
+  const { targetRef, tooltip, tooltipVisible } = useTooltip(<FarmAuctionTagToolTipContent />, { placement: 'right' })
+  return (
+    <>
+      {tooltipVisible && tooltip}
+      <TooltipText ref={targetRef} style={{ textDecoration: 'none' }}>
+        <Tag variant="failure" outline startIcon={<CommunityIcon width="18px" color="failure" mr="4px" />} {...props}>
+          {t('Farm Auction')}
+        </Tag>
+      </TooltipText>
+    </>
+  )
+}
 
-const DualTag = (props) => (
-  <Tag variant="textSubtle" outline {...props}>
-    Dual
-  </Tag>
-)
+const CommunityTag: React.FC<TagProps> = (props) => {
+  const { t } = useTranslation()
+  return (
+    <Tag variant="failure" outline startIcon={<CommunityIcon width="18px" color="failure" mr="4px" />} {...props}>
+      {t('Community')}
+    </Tag>
+  )
+}
 
-export { CoreTag, CommunityTag, BinanceTag, DualTag }
+const DualTag: React.FC<TagProps> = (props) => {
+  const { t } = useTranslation()
+  return (
+    <Tag variant="textSubtle" outline {...props}>
+      {t('Dual')}
+    </Tag>
+  )
+}
+
+const ManualPoolTag: React.FC<TagProps> = (props) => {
+  const { t } = useTranslation()
+  return (
+    <Tag variant="secondary" outline startIcon={<RefreshIcon width="18px" color="secondary" mr="4px" />} {...props}>
+      {t('Manual')}
+    </Tag>
+  )
+}
+
+const CompoundingPoolTag: React.FC<TagProps> = (props) => {
+  const { t } = useTranslation()
+  return (
+    <Tag variant="success" outline startIcon={<AutoRenewIcon width="18px" color="success" mr="4px" />} {...props}>
+      {t('Auto')}
+    </Tag>
+  )
+}
+
+const VoteNowTag: React.FC<TagProps> = (props) => {
+  const { t } = useTranslation()
+  return (
+    <Tag variant="success" startIcon={<VoteIcon width="18px" color="success" mr="4px" />} {...props}>
+      {t('Vote Now')}
+    </Tag>
+  )
+}
+
+const SoonTag: React.FC<TagProps> = (props) => {
+  const { t } = useTranslation()
+  return (
+    <Tag variant="binance" startIcon={<TimerIcon width="18px" color="success" mr="4px" />} {...props}>
+      {t('Soon')}
+    </Tag>
+  )
+}
+
+const ClosedTag: React.FC<TagProps> = (props) => {
+  const { t } = useTranslation()
+  return (
+    <Tag variant="textDisabled" startIcon={<BlockIcon width="18px" color="textDisabled" mr="4px" />} {...props}>
+      {t('Closed')}
+    </Tag>
+  )
+}
+
+export {
+  CoreTag,
+  FarmAuctionTag,
+  DualTag,
+  ManualPoolTag,
+  CompoundingPoolTag,
+  VoteNowTag,
+  SoonTag,
+  ClosedTag,
+  CommunityTag,
+}

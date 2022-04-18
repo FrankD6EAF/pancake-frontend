@@ -1,101 +1,49 @@
+import { SerializedFarmConfig } from 'config/constants/types'
 import BigNumber from 'bignumber.js'
-import erc20 from 'config/abi/erc20.json'
-import masterchefABI from 'config/abi/masterchef.json'
-import multicall from 'utils/multicall'
-import { getAddress, getMasterChefAddress } from 'utils/addressHelpers'
-import farmsConfig from 'config/constants/farms'
+import { BIG_TEN, BIG_ZERO } from '../../utils/bigNumber'
+import { fetchPublicFarmsData } from './fetchPublicFarmData'
+import { fetchMasterChefData } from './fetchMasterChefData'
+import { SerializedFarm } from '../types'
 
-const fetchFarms = async () => {
-  const data = await Promise.all(
-    farmsConfig.map(async (farmConfig) => {
-      const lpAddress = getAddress(farmConfig.lpAddresses)
-      const calls = [
-        // Balance of token in the LP contract
-        {
-          address: getAddress(farmConfig.token.address),
-          name: 'balanceOf',
-          params: [lpAddress],
-        },
-        // Balance of quote token on LP contract
-        {
-          address: getAddress(farmConfig.quoteToken.address),
-          name: 'balanceOf',
-          params: [lpAddress],
-        },
-        // Balance of LP tokens in the master chef contract
-        {
-          address: lpAddress,
-          name: 'balanceOf',
-          params: [getMasterChefAddress()],
-        },
-        // Total supply of LP tokens
-        {
-          address: lpAddress,
-          name: 'totalSupply',
-        },
-        // Token decimals
-        {
-          address: getAddress(farmConfig.token.address),
-          name: 'decimals',
-        },
-        // Quote token decimals
-        {
-          address: getAddress(farmConfig.quoteToken.address),
-          name: 'decimals',
-        },
-      ]
+const fetchFarms = async (farmsToFetch: SerializedFarmConfig[]): Promise<SerializedFarm[]> => {
+  const farmResult = await fetchPublicFarmsData(farmsToFetch)
+  const masterChefResult = await fetchMasterChefData(farmsToFetch)
 
-      const [
-        tokenBalanceLP,
-        quoteTokenBalanceLP,
-        lpTokenBalanceMC,
-        lpTotalSupply,
-        tokenDecimals,
-        quoteTokenDecimals,
-      ] = await multicall(erc20, calls)
+  return farmsToFetch.map((farm, index) => {
+    const [tokenBalanceLP, quoteTokenBalanceLP, lpTokenBalanceMC, lpTotalSupply, tokenDecimals, quoteTokenDecimals] =
+      farmResult[index]
 
-      // Ratio in % a LP tokens that are in staking, vs the total number in circulation
-      const lpTokenRatio = new BigNumber(lpTokenBalanceMC).div(new BigNumber(lpTotalSupply))
+    const [info, totalAllocPoint] = masterChefResult[index]
 
-      // Total value in staking in quote token value
-      const lpTotalInQuoteToken = new BigNumber(quoteTokenBalanceLP)
-        .div(new BigNumber(10).pow(18))
-        .times(new BigNumber(2))
-        .times(lpTokenRatio)
+    // Ratio in % of LP tokens that are staked in the MC, vs the total number in circulation
+    const lpTokenRatio = new BigNumber(lpTokenBalanceMC).div(new BigNumber(lpTotalSupply))
 
-      // Amount of token in the LP that are considered staking (i.e amount of token * lp ratio)
-      const tokenAmount = new BigNumber(tokenBalanceLP).div(new BigNumber(10).pow(tokenDecimals)).times(lpTokenRatio)
-      const quoteTokenAmount = new BigNumber(quoteTokenBalanceLP)
-        .div(new BigNumber(10).pow(quoteTokenDecimals))
-        .times(lpTokenRatio)
+    // Raw amount of token in the LP, including those not staked
+    const tokenAmountTotal = new BigNumber(tokenBalanceLP).div(BIG_TEN.pow(tokenDecimals))
+    const quoteTokenAmountTotal = new BigNumber(quoteTokenBalanceLP).div(BIG_TEN.pow(quoteTokenDecimals))
 
-      const [info, totalAllocPoint] = await multicall(masterchefABI, [
-        {
-          address: getMasterChefAddress(),
-          name: 'poolInfo',
-          params: [farmConfig.pid],
-        },
-        {
-          address: getMasterChefAddress(),
-          name: 'totalAllocPoint',
-        },
-      ])
+    // Amount of quoteToken in the LP that are staked in the MC
+    const quoteTokenAmountMc = quoteTokenAmountTotal.times(lpTokenRatio)
 
-      const allocPoint = new BigNumber(info.allocPoint._hex)
-      const poolWeight = allocPoint.div(new BigNumber(totalAllocPoint))
+    // Total staked in LP, in quote token value
+    const lpTotalInQuoteToken = quoteTokenAmountMc.times(new BigNumber(2))
 
-      return {
-        ...farmConfig,
-        tokenAmount: tokenAmount.toJSON(),
-        quoteTokenAmount: quoteTokenAmount.toJSON(),
-        lpTotalInQuoteToken: lpTotalInQuoteToken.toJSON(),
-        tokenPriceVsQuote: quoteTokenAmount.div(tokenAmount).toJSON(),
-        poolWeight: poolWeight.toJSON(),
-        multiplier: `${allocPoint.div(100).toString()}X`,
-      }
-    }),
-  )
-  return data
+    const allocPoint = info ? new BigNumber(info.allocPoint?._hex) : BIG_ZERO
+    const poolWeight = totalAllocPoint ? allocPoint.div(new BigNumber(totalAllocPoint)) : BIG_ZERO
+
+    return {
+      ...farm,
+      token: farm.token,
+      quoteToken: farm.quoteToken,
+      tokenAmountTotal: tokenAmountTotal.toJSON(),
+      quoteTokenAmountTotal: quoteTokenAmountTotal.toJSON(),
+      lpTotalSupply: new BigNumber(lpTotalSupply).toJSON(),
+      lpTotalInQuoteToken: lpTotalInQuoteToken.toJSON(),
+      tokenPriceVsQuote: quoteTokenAmountTotal.div(tokenAmountTotal).toJSON(),
+      poolWeight: poolWeight.toJSON(),
+      multiplier: `${allocPoint.div(100).toString()}X`,
+    }
+  })
 }
 
 export default fetchFarms

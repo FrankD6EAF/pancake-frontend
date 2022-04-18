@@ -14,10 +14,16 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx",
+    "jsx": "preserve",
     "strictNullChecks": false,
     "noImplicitAny": false,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "downlevelIteration": true,
+    "incremental": true,
+    "paths": {
+      "@pancakeswap/uikit": ["../packages/uikit/src/index.ts"]
+    }
   },
-  "include": ["src", "scripts"]
+  "exclude": ["node_modules", "cypress"],
+  "include": ["next-env.d.ts", "./src/**/*.ts", "./src/**/*.tsx"]
 }

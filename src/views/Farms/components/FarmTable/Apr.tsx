@@ -1,18 +1,18 @@
-import React from 'react'
 import styled from 'styled-components'
 import ApyButton from 'views/Farms/components/FarmCard/ApyButton'
-import { Address } from 'config/constants/types'
 import BigNumber from 'bignumber.js'
 import { BASE_ADD_LIQUIDITY_URL } from 'config'
 import getLiquidityUrlPathParts from 'utils/getLiquidityUrlPathParts'
-import useI18n from 'hooks/useI18n'
+import { Skeleton } from '@pancakeswap/uikit'
 
 export interface AprProps {
   value: string
   multiplier: string
+  pid: number
   lpLabel: string
-  tokenAddress?: Address
-  quoteTokenAddress?: Address
+  lpSymbol: string
+  tokenAddress?: string
+  quoteTokenAddress?: string
   cakePrice: BigNumber
   originalValue: number
   hideButton?: boolean
@@ -42,28 +42,37 @@ const AprWrapper = styled.div`
 
 const Apr: React.FC<AprProps> = ({
   value,
+  pid,
   lpLabel,
+  lpSymbol,
+  multiplier,
   tokenAddress,
   quoteTokenAddress,
   cakePrice,
   originalValue,
   hideButton = false,
 }) => {
-  const TranslateString = useI18n()
   const liquidityUrlPathParts = getLiquidityUrlPathParts({ quoteTokenAddress, tokenAddress })
   const addLiquidityUrl = `${BASE_ADD_LIQUIDITY_URL}/${liquidityUrlPathParts}`
 
   return originalValue !== 0 ? (
     <Container>
       {originalValue ? (
-        <>
-          <AprWrapper>{value}%</AprWrapper>
-          {!hideButton && (
-            <ApyButton lpLabel={lpLabel} cakePrice={cakePrice} apy={originalValue} addLiquidityUrl={addLiquidityUrl} />
-          )}
-        </>
+        <ApyButton
+          variant={hideButton ? 'text' : 'text-and-button'}
+          pid={pid}
+          lpSymbol={lpSymbol}
+          lpLabel={lpLabel}
+          multiplier={multiplier}
+          cakePrice={cakePrice}
+          apr={originalValue}
+          displayApr={value}
+          addLiquidityUrl={addLiquidityUrl}
+        />
       ) : (
-        <AprWrapper>{TranslateString(656, 'Loading...')}</AprWrapper>
+        <AprWrapper>
+          <Skeleton width={60} />
+        </AprWrapper>
       )}
     </Container>
   ) : (
